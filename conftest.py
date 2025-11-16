@@ -2,7 +2,8 @@ import fakes
 import pytest
 import requests
 
-from data import ApiUrls
+
+from data import ApiUrls, DataForOrder
 
 
 @pytest.fixture
@@ -91,3 +92,36 @@ def authenticate_courier(login, password):
 
 def delete_courier(courier_id):
     return requests.delete(f'{ApiUrls.MAIN_URL}{ApiUrls.DELETE_COURIER}{courier_id}')
+
+import fakes
+import pytest
+import requests
+
+from data import ApiUrls, DataForOrder
+
+
+@pytest.fixture(scope="function")  
+def create_and_cancel_order(request):
+    """
+    Фикстура для создания и последующей отмены заказа.
+    Автоматически создает заказ перед каждым тестом и отменяет его после окончания теста.
+    """
+    # Создание заказа
+    order_payload = DataForOrder.order_payload.copy()
+    response = requests.post(f"{ApiUrls.MAIN_URL}{ApiUrls.CREATE_ORDER}", json=order_payload)
+    
+    # Если заказ успешно создан, получаем track-код
+    if response.status_code == 201:
+        track = response.json()['track']
+    else:
+        raise Exception(f"Ошибка при создании заказа: {response.text}")
+    
+    # Передаем track-код в тестовую функцию
+    request.cls.track = track
+    
+    yield track  # Предоставляет track-код тестовым методам
+    
+    # После выполнения теста отменить заказ
+    cancel_response = requests.put(f"{ApiUrls.MAIN_URL}{ApiUrls.CANCEL_ORDER}?track={track}")
+    if not cancel_response.ok:
+        print(f"Ошибка при отмене заказа: {cancel_response.text}")  # выводим ошибку в консоль, но продолжаем работу
