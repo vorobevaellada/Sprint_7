@@ -93,11 +93,6 @@ def authenticate_courier(login, password):
 def delete_courier(courier_id):
     return requests.delete(f'{ApiUrls.MAIN_URL}{ApiUrls.DELETE_COURIER}{courier_id}')
 
-import fakes
-import pytest
-import requests
-
-from data import ApiUrls, DataForOrder
 
 
 @pytest.fixture(scope="function")  
